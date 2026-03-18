@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Confetti from "react-confetti";
 
 const habits = [
   "🗣️ 45 mins Morning Affirmations",
@@ -32,19 +33,46 @@ function generateDates() {
 
 const dates = generateDates();
 
+const dailyMessages = [
+  "✨ Today is your day — make it legendary!",
+  "🔥 Keep pushing — every check counts!",
+  "💎 Build habits, build yourself.",
+  "🚀 Small steps = giant leaps.",
+  "🌟 Believe in the process.",
+  "⚡ You are unstoppable!",
+  "🌈 Glow with your habits!",
+  "💫 Every check is progress!",
+];
+
 export default function Home() {
   const [checkboxes, setCheckboxes] = useState<Record<string, boolean>>({});
-  const [mounted, setMounted] = useState(false);
+  const [dailyMessage, setDailyMessage] = useState("");
+  const [width, setWidth] = useState(0);
+  const [height, setHeight] = useState(0);
+  const [messageIndex, setMessageIndex] = useState(0);
 
   useEffect(() => {
     const saved = localStorage.getItem("mahlanguTracker");
     if (saved) setCheckboxes(JSON.parse(saved));
-    setMounted(true);
+
+    setWidth(window.innerWidth);
+    setHeight(window.innerHeight);
+
+    // Set initial daily message randomly
+    setMessageIndex(Math.floor(Math.random() * dailyMessages.length));
   }, []);
 
   useEffect(() => {
-    if (mounted) localStorage.setItem("mahlanguTracker", JSON.stringify(checkboxes));
-  }, [checkboxes, mounted]);
+    localStorage.setItem("mahlanguTracker", JSON.stringify(checkboxes));
+  }, [checkboxes]);
+
+  // Rotate daily message every 10s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMessageIndex(prev => (prev + 1) % dailyMessages.length);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const toggle = (habit: string, date: string) => {
     const key = `${habit}-${date}`;
@@ -54,6 +82,12 @@ export default function Home() {
   const dailyProgress = (date: string) => {
     const checked = habits.filter(h => checkboxes[`${h}-${date}`]).length;
     return (checked / habits.length) * 100;
+  };
+
+  const overallProgress = () => {
+    let totalChecked = 0;
+    dates.forEach(date => habits.forEach(h => { if (checkboxes[`${h}-${date}`]) totalChecked++; }));
+    return (totalChecked / (habits.length * dates.length)) * 100;
   };
 
   const habitStreak = (habit: string) => {
@@ -66,104 +100,191 @@ export default function Home() {
     return streak;
   };
 
-  if (!mounted) return null;
-
   return (
-    <main className="min-h-screen bg-[#050505] text-white p-4 md:p-8 font-sans selection:bg-cyan-500/30">
-      
-      {/* GLOSSY BACKGROUND */}
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-cyan-900/10 blur-[120px]" />
+    <main className="min-h-screen p-6 font-sans relative overflow-hidden bg-gray-900 text-gray-50">
+      {/* Background particles */}
+      <div className="absolute inset-0 pointer-events-none">
+        {Array.from({ length: 50 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute bg-pink-500 rounded-full opacity-30 animate-pulse"
+            style={{
+              width: `${Math.random() * 6 + 2}px`,
+              height: `${Math.random() * 6 + 2}px`,
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
+            }}
+          />
+        ))}
       </div>
 
-      {/* VISION BOARD HEADER */}
-      <div className="max-w-7xl mx-auto text-center space-y-4 mb-10 border-b border-white/5 pb-10">
-        <h1 className="text-5xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-zinc-500">
-          DR. CHRISTOPHER MAHLANGU
-        </h1>
-        <p className="text-[10px] md:text-xs font-bold text-cyan-500 tracking-[0.3em] uppercase max-w-4xl mx-auto leading-relaxed">
-          🎓 BSc & BScHons Mathematics (Wits) | MSc Applied Mathematics (Harvard) | PhD Applied Mathematics: Complex Quantum Stochastic Control Systems (Harvard)
-        </p>
-        <div className="flex flex-wrap justify-center gap-3 text-[9px] uppercase tracking-widest text-zinc-400 font-bold italic pt-2">
-            <span>💰 $600K+ Annually</span>
-            <span>🏎️ Audi RS Q8</span>
-            <span>🚙 Range Rover Autobiography</span>
+      {/* Confetti on 100% */}
+      {overallProgress() === 100 && <Confetti width={width} height={height} recycle={false} numberOfPieces={150} />}
+
+      {/* Vision Board */}
+      <div className="max-w-4xl mx-auto text-center space-y-4 mb-10 glass-panel">
+        <h1 className="text-5xl font-bold drop-shadow-lg">Dr. Christopher Mahlangu</h1>
+        <div className="space-y-1 text-lg font-semibold text-gray-200">
+          <p>BSc in Mathematical Sciences (Wits)</p>
+          <p>BSc Honours in Mathematics (Wits)</p>
+          <p>MSc Applied Mathematics (Harvard)</p>
+          <p>PhD Applied Mathematics: Complex Quantum Stochastic Control Systems (Harvard)</p>
         </div>
-        <p className="text-zinc-500 text-xs italic max-w-2xl mx-auto pt-4">
-          "Just because it's taking time doesn't mean it's not happening. Building a house brick by brick... layer by hard layer."
+        <p className="text-xl mt-3 drop-shadow-md">
+          Elite Quantitative Researcher | $600K+ Annually | Audi RS Q8 | Range Rover Autobiography
         </p>
+        <p className="text-2xl italic text-pink-400 animate-pulse transition-all duration-1000">{dailyMessages[messageIndex]}</p>
       </div>
 
-      {/* GRID TRACKER */}
-      <div className="max-w-[100vw] overflow-x-auto rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl shadow-2xl">
-        <table className="border-collapse w-full">
-          <thead>
-            <tr className="bg-white/5 border-b border-white/10">
-              <th className="sticky left-0 bg-[#070707] z-30 p-4 text-left text-[10px] uppercase tracking-widest text-zinc-500 border-r border-white/10 min-w-[220px]">Habit</th>
+      {/* Circular Overall Progress */}
+      <div className="relative w-48 h-48 mx-auto mb-10">
+        <svg className="w-48 h-48 transform -rotate-90">
+          <circle cx="96" cy="96" r="84" stroke="#444" strokeWidth="15" fill="none" />
+          <circle
+            cx="96"
+            cy="96"
+            r="84"
+            stroke="url(#gradient)"
+            strokeWidth="15"
+            fill="none"
+            strokeDasharray={2 * Math.PI * 84}
+            strokeDashoffset={2 * Math.PI * 84 * (1 - overallProgress() / 100)}
+            strokeLinecap="round"
+            style={{ transition: "stroke-dashoffset 1s ease-out" }}
+          />
+          <defs>
+            <linearGradient id="gradient" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#3B82F6" />
+              <stop offset="100%" stopColor="#EC4899" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-3xl font-bold drop-shadow-lg">{overallProgress().toFixed(0)}%</span>
+          <span className="text-sm text-gray-300">Overall Progress</span>
+        </div>
+      </div>
+
+      {/* Habit Tracker Table */}
+      <div className="overflow-x-auto w-full max-w-6xl mb-10 relative z-10">
+        <table className="border-collapse w-full shadow-lg rounded-3xl overflow-hidden glass-panel">
+          <thead className="bg-gray-800 bg-opacity-40">
+            <tr>
+              <th className="sticky top-0 bg-gray-800 bg-opacity-40 z-10 p-2 text-left text-lg">Habit</th>
               {dates.map(date => (
-                <th key={date} className="p-3 text-[10px] font-bold text-zinc-400 border-r border-white/5 min-w-[50px]">
-                  <div className="rotate-[-90deg] whitespace-nowrap">{date}</div>
-                </th>
+                <th key={date} className="p-2 text-center text-xs rotate-90 origin-bottom">{date}</th>
               ))}
-              <th className="sticky right-0 bg-[#070707] z-30 p-4 text-center text-[10px] uppercase tracking-widest text-cyan-500 border-l border-white/10">Streak 🔥</th>
+              <th className="sticky top-0 bg-gray-800 bg-opacity-40 z-10 p-2 text-center text-lg">Progress</th>
+              <th className="sticky top-0 bg-gray-800 bg-opacity-40 z-10 p-2 text-center text-lg">Streak 🔥</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/[0.05]">
+          <tbody>
             {habits.map(habit => (
-              <tr key={habit} className="hover:bg-white/[0.03] transition-colors group">
-                <td className="sticky left-0 bg-[#070707] z-20 p-4 text-xs font-bold text-zinc-300 border-r border-white/10 group-hover:text-cyan-400 transition-colors">
-                  {habit}
-                </td>
+              <tr key={habit} className="border-b border-gray-700 hover:bg-white hover:bg-opacity-10 transition relative">
+                <td className="p-2 font-medium text-lg">{habit}</td>
                 {dates.map(date => {
                   const key = `${habit}-${date}`;
                   return (
-                    <td key={key} className="p-0 border-r border-white/5">
-                        <button 
-                          onClick={() => toggle(habit, date)}
-                          className={`w-full h-12 flex items-center justify-center transition-all ${
-                            checkboxes[key] ? 'bg-cyan-500/10' : 'hover:bg-white/5'
-                          }`}
-                        >
-                          <div className={`w-4 h-4 rounded-md border transition-all ${
-                            checkboxes[key] ? 'bg-cyan-500 border-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.4)]' : 'border-zinc-800 bg-transparent'
-                          }`}>
-                            {checkboxes[key] && <span className="text-black text-[8px] font-black flex items-center justify-center h-full">✓</span>}
-                          </div>
-                        </button>
+                    <td key={key} className="p-2 text-center relative">
+                      <input
+                        type="checkbox"
+                        className="neon-checkbox w-6 h-6 cursor-pointer accent-gradient hover:scale-125 transition transform duration-300"
+                        checked={!!checkboxes[key]}
+                        onChange={() => toggle(habit, date)}
+                      />
+                      {checkboxes[key] && (
+                        <span className="absolute -top-1 -right-1 text-pink-400 animate-pulse">✨</span>
+                      )}
                     </td>
                   );
                 })}
-                <td className="sticky right-0 bg-[#070707] z-20 p-4 text-center font-mono text-cyan-400 text-sm border-l border-white/10">
-                    {habitStreak(habit)}
+                <td className="p-2 text-center text-lg font-bold">
+                  {(
+                    habits.filter(h => dates.some(date => checkboxes[`${h}-${date}`])).length /
+                    habits.length *
+                    100
+                  ).toFixed(0)}
+                  %
+                </td>
+                <td className="p-2 text-center text-lg font-semibold">
+                  {habitStreak(habit)} {habitStreak(habit) > 0 && <span className="neon-star">⭐</span>}
                 </td>
               </tr>
             ))}
           </tbody>
-          <tfoot className="bg-white/5 border-t border-white/10">
-            <tr>
-              <td className="sticky left-0 bg-[#070707] p-4 text-[10px] font-black uppercase text-zinc-500 border-r border-white/10">Daily Progress</td>
-              {dates.map(date => (
-                <td key={date} className="p-2 border-r border-white/5">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="h-12 w-1.5 bg-zinc-900 rounded-full overflow-hidden flex flex-col justify-end">
-                      <div 
-                        className="bg-cyan-500 transition-all duration-500 shadow-[0_0_10px_rgba(6,182,212,0.6)]" 
-                        style={{ height: `${dailyProgress(date)}%` }}
-                      ></div>
-                    </div>
-                    <span className="text-[8px] font-mono text-zinc-500">{dailyProgress(date).toFixed(0)}%</span>
-                  </div>
-                </td>
-              ))}
-              <td className="sticky right-0 bg-[#070707] border-l border-white/10"></td>
-            </tr>
-          </tfoot>
         </table>
       </div>
 
-      <footer className="mt-12 text-center text-[8px] text-zinc-700 tracking-[0.5em] uppercase pb-10">
-        Quantum Execution Layer // Built for Christopher Mahlangu
-      </footer>
+      {/* Motivational Link */}
+      <div className="text-center z-10 relative">
+        <a
+          href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+          target="_blank"
+          className="px-6 py-3 bg-pink-500 text-white rounded-full shadow-lg hover:bg-pink-600 transition duration-300 font-semibold"
+        >
+          Need Motivation? Click Here!
+        </a>
+      </div>
+
+      {/* --- NEON / GLOSSY CSS --- */}
+      <style jsx global>{`
+        .glass-panel {
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(15px);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 1rem;
+          box-shadow: 0 0 20px rgba(255, 255, 255, 0.1),
+            0 0 40px rgba(236, 72, 153, 0.2);
+          transition: all 0.3s ease;
+        }
+
+        .neon-checkbox:checked {
+          box-shadow: 0 0 10px #ec4899, 0 0 20px #3b82f6;
+        }
+        .neon-checkbox:hover {
+          transform: scale(1.3);
+          box-shadow: 0 0 5px #ec4899, 0 0 15px #3b82f6;
+        }
+
+        .neon-star {
+          text-shadow: 0 0 5px #facc15, 0 0 10px #fcd34d, 0 0 20px #fbbf24;
+          animation: pulseStar 1.5s infinite;
+        }
+        @keyframes pulseStar {
+          0%,
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.3);
+            opacity: 0.8;
+          }
+        }
+
+        .neon-progress {
+          box-shadow: 0 0 8px #3b82f6, 0 0 15px #ec4899;
+          border-radius: 9999px;
+        }
+
+        @keyframes gradientBackground {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+
+        .animate-gradientBackground {
+          background-size: 400% 400%;
+          animation: gradientBackground 20s ease infinite;
+        }
+      `}</style>
     </main>
   );
 }
